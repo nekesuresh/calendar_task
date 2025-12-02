@@ -1,7 +1,8 @@
 import { format } from "date-fns";
-import { Calendar, Clock, Users, Video, Pencil, Trash2 } from "lucide-react";
+import { Calendar, Clock, Users, Video, Pencil, Trash2, Lock, Play, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Event } from "@shared/schema";
 
 interface EventCardProps {
@@ -103,11 +104,11 @@ export function EventCard({ event, onEdit, onDelete }: EventCardProps) {
         </div>
       </div>
 
-      {event.meetLink && (
-        <div className="mt-4 pl-2">
+      <div className="mt-4 pl-2 flex gap-2">
+        {event.meetLink && !isPast && (
           <Button
             asChild
-            className="w-full rounded-full bg-coral hover:bg-coral/90 text-white font-medium shadow-sm"
+            className="flex-1 rounded-full bg-coral hover:bg-coral/90 text-white font-medium shadow-sm"
             data-testid={`button-join-${event.id}`}
           >
             <a href={event.meetLink} target="_blank" rel="noopener noreferrer">
@@ -115,8 +116,57 @@ export function EventCard({ event, onEdit, onDelete }: EventCardProps) {
               Join Session
             </a>
           </Button>
-        </div>
-      )}
+        )}
+
+        {isPast && event.meetLink && (
+          <>
+            {event.recordingStatus === 'available' && event.recordingUrl ? (
+              <Button
+                asChild
+                className="flex-1 rounded-full bg-teal hover:bg-teal/90 text-white font-medium shadow-sm"
+                data-testid={`button-view-recording-${event.id}`}
+              >
+                <a href={event.recordingUrl} target="_blank" rel="noopener noreferrer">
+                  <Play className="h-4 w-4 mr-2" />
+                  View Recording
+                </a>
+              </Button>
+            ) : event.recordingStatus === 'processing' ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    disabled
+                    className="flex-1 rounded-full bg-muted text-muted-foreground font-medium shadow-sm cursor-not-allowed"
+                    data-testid={`button-recording-processing-${event.id}`}
+                  >
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Processing...
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Recording is still being processed. Please check back later.</p>
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    disabled
+                    className="flex-1 rounded-full bg-muted text-muted-foreground font-medium shadow-sm cursor-not-allowed"
+                    data-testid={`button-recording-locked-${event.id}`}
+                  >
+                    <Lock className="h-4 w-4 mr-2" />
+                    View Recording
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>No recording available. Make sure to record the session in Google Meet.</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

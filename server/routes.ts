@@ -1,7 +1,8 @@
 import type { Express } from "express";
 import { type Server } from "http";
 import { getUncachableGoogleCalendarClient, getOrganizerEmail } from "./google-calendar";
-import { insertEventSchema, type Event, type Organizer } from "@shared/schema";
+import { getRecentRecordings } from "./google-drive";
+import { insertEventSchema, type Event, type Organizer, type RecordingStatus } from "@shared/schema";
 import { fromZodError } from "zod-validation-error";
 
 function formatDateTimeForGoogleCalendar(dateTime: string): string {
@@ -60,16 +61,74 @@ export async function registerRoutes(
         return !eventType || eventType === 'default';
       });
 
-      const events: Event[] = editableEvents.map((event: any) => ({
-        id: event.id || '',
-        title: event.summary || 'Untitled Session',
-        startTime: event.start?.dateTime || event.start?.date || '',
-        endTime: event.end?.dateTime || event.end?.date || '',
-        timezone: event.start?.timeZone || 'UTC',
-        participants: (event.attendees || []).map((a: any) => a.email).filter(Boolean),
-        meetLink: event.hangoutLink || event.conferenceData?.entryPoints?.[0]?.uri || null,
-        description: event.description || null,
-      }));
+      // Fetch recordings from Google Drive
+      let recordings: Array<{ fileId: string; webViewLink: string; name: string; createdTime: string }> = [];
+      try {
+        recordings = await getRecentRecordings();
+      } catch (error: any) {
+        console.log('Could not fetch recordings:', error.message);
+      }
+
+      const events: Event[] = editableEvents.map((event: any) => {
+        const meetLink = event.hangoutLink || event.conferenceData?.entryPoints?.[0]?.uri || null;
+        const eventEndTime = new Date(event.end?.dateTime || event.end?.date || '');
+        const now = new Date();
+        const isPastEvent = eventEndTime < now;
+        
+        // Try to find a matching recording for this event
+        let recordingStatus: RecordingStatus = 'not_available';
+        let recordingUrl: string | null = null;
+        
+        if (meetLink && isPastEvent) {
+          // Extract meeting code from the Meet link
+          const meetCodeMatch = meetLink.match(/meet\.google\.com\/([a-z]{3}-[a-z]{4}-[a-z]{3})/i);
+          const eventTitle = (event.summary || '').toLowerCase();
+          const eventDate = new Date(event.start?.dateTime || event.start?.date || '');
+          
+          // Look for a recording that matches this event
+          for (const recording of recordings) {
+            const recordingName = recording.name.toLowerCase();
+            const recordingDate = new Date(recording.createdTime);
+            
+            // Check if recording was created around the same time as the event
+            const timeDiff = Math.abs(recordingDate.getTime() - eventDate.getTime());
+            const withinTimeWindow = timeDiff < 24 * 60 * 60 * 1000; // Within 24 hours
+            
+            // Match by title similarity or meeting code
+            const titleMatch = eventTitle && recordingName.includes(eventTitle.slice(0, 10));
+            const codeMatch = meetCodeMatch && recordingName.includes(meetCodeMatch[1].replace(/-/g, ''));
+            
+            if (withinTimeWindow && (titleMatch || codeMatch || recordingName.includes('meet'))) {
+              recordingStatus = 'available';
+              recordingUrl = recording.webViewLink;
+              break;
+            }
+          }
+          
+          // If no recording found but event is past, mark as pending (might still be processing)
+          if (recordingStatus === 'not_available') {
+            const hoursSinceEnd = (now.getTime() - eventEndTime.getTime()) / (1000 * 60 * 60);
+            if (hoursSinceEnd < 24) {
+              recordingStatus = 'processing';
+            } else {
+              recordingStatus = 'pending';
+            }
+          }
+        }
+        
+        return {
+          id: event.id || '',
+          title: event.summary || 'Untitled Session',
+          startTime: event.start?.dateTime || event.start?.date || '',
+          endTime: event.end?.dateTime || event.end?.date || '',
+          timezone: event.start?.timeZone || 'UTC',
+          participants: (event.attendees || []).map((a: any) => a.email).filter(Boolean),
+          meetLink,
+          description: event.description || null,
+          recordingStatus: isPastEvent ? recordingStatus : null,
+          recordingUrl,
+        };
+      });
 
       res.json(events);
     } catch (error: any) {
