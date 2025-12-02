@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { Calendar, Clock, Users, Video, Pencil, Trash2 } from "lucide-react";
+import { Calendar, Clock, Users, Video, Pencil, Trash2, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { Event } from "@shared/schema";
@@ -103,18 +103,32 @@ export function EventCard({ event, onEdit, onDelete }: EventCardProps) {
         </div>
       </div>
 
-      {event.meetLink && (
-        <div className="mt-4 pl-2">
-          <Button
-            asChild
-            className="w-full rounded-full bg-coral hover:bg-coral/90 text-white font-medium shadow-sm"
-            data-testid={`button-join-${event.id}`}
-          >
-            <a href={event.meetLink} target="_blank" rel="noopener noreferrer">
-              <Video className="h-4 w-4 mr-2" />
-              Join Session
-            </a>
-          </Button>
+      {(event.meetLink || event.recordingLink) && (
+        <div className="mt-4 pl-2 space-y-2">
+          {event.meetLink && (
+            <Button
+              asChild
+              className="w-full rounded-full bg-coral hover:bg-coral/90 text-white font-medium shadow-sm"
+              data-testid={`button-join-${event.id}`}
+            >
+              <a href={event.meetLink} target="_blank" rel="noopener noreferrer">
+                <Video className="h-4 w-4 mr-2" />
+                Join Session
+              </a>
+            </Button>
+          )}
+          {event.recordingLink && (
+            <Button
+              asChild
+              className="w-full rounded-full bg-teal hover:bg-teal/90 text-white font-medium shadow-sm"
+              data-testid={`button-recording-${event.id}`}
+            >
+              <a href={event.recordingLink} target="_blank" rel="noopener noreferrer">
+                <Play className="h-4 w-4 mr-2" />
+                Watch Recording
+              </a>
+            </Button>
+          )}
         </div>
       )}
     </div>
