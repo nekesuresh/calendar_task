@@ -1,8 +1,15 @@
-import { Link } from "wouter";
+import { useLocation } from "wouter";
 import { Calendar, Video, Users, Clock, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function Home() {
+  const [, navigate] = useLocation();
+
+  const handleGetStarted = () => {
+    sessionStorage.setItem("navigatedToCalendar", "true");
+    navigate("/calendar");
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted">
       <div className="container mx-auto px-4 py-16">
@@ -21,15 +28,13 @@ export default function Home() {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
             <Button
-              asChild
+              onClick={handleGetStarted}
               size="lg"
               data-testid="button-get-started"
               className="rounded-full bg-coral hover:bg-coral/90 text-white shadow-lg font-semibold text-lg px-8"
             >
-              <Link href="/calendar">
-                Get Started
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
+              Get Started
+              <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </div>
 
