@@ -1,0 +1,127 @@
+design a web-based Tutoring Calendar App using the following color palette and the existing layout structure:
+
+Color Palette:
+
+Teal: #6DB8D0
+
+Yellow: #FBC85F
+
+Navy: #3E4E88
+
+Coral: #F87C73
+
+Light Blue Gradient: #D2EBF4 → #B4DFEC
+
+Light Pink Gradient: #FFDAD9 → #FFC4C3
+
+Light Yellow Gradient: #FFE FCE → #FFEABD
+
+Overall Goal:
+Keep the same structure and layout as a standard calendar/events dashboard, but restyle it for a tutoring service. Use friendly, modern UI patterns with soft rounded corners, subtle shadows, and accessible typography.
+
+Design Requirements
+1. Header
+
+Clean white header with slight shadow.
+
+Left: calendar icon inside a small colored circle (teal or navy).
+
+Title text: “Tutoring Sessions”.
+
+Tabs: “Events” and “Calendar” as pill-shaped buttons.
+
+Right: “New Session” button in coral (#F87C73) with rounded edges.
+
+2. Page Sections
+
+Section title: Upcoming Sessions
+
+Below that: a vertically stacked list of session cards.
+
+Another section titled Completed Sessions with lightly dimmed styling.
+
+Use soft background washes with the gradients (very subtle, 5–10% opacity).
+
+3. Event / Session Cards
+
+Design each card as a rounded tile with:
+
+Large session title in navy.
+
+Subject label (e.g., Math, Science) as a small colored tag.
+
+Date and time row with icons.
+
+Timezone badge as a small rounded capsule.
+
+Student/tutor emails displayed as small pill chips.
+
+Primary action button: “Join Session” — coral, rounded, with a video icon.
+
+Left accent bar or colored dot:
+
+Teal → academic subjects
+
+Yellow → planning/homework review
+
+Coral → exam prep or urgent sessions
+
+Shadow: soft, modern, subtle.
+
+4. New Session Modal (Form)
+
+Keep the same structure but adjust wording:
+
+Session Title / Subject
+
+Start Date & Time
+
+End Date & Time
+
+Student Emails (up to 5)
+
+Tutor Name (optional)
+
+Styled with:
+
+Light blue or yellow gradient header band
+
+White form body
+
+Coral submit button
+
+5. Style Personality
+
+Use rounded shapes everywhere (rounded-xl or rounded-2xl feel).
+
+Add small decorative circles or blobs using yellow, teal, and navy.
+
+Use a modern sans-serif font, soft whitespace, and friendly spacing.
+
+Maintain an educational, warm, student-friendly aesthetic.
+
+Tone of the UI
+
+Clean
+
+Friendly
+
+Organized
+
+Minimalistic
+
+Approachable for students, parents, and tutors
+
+Output Expectation
+
+Generate:
+
+The full page layout (header, tab bar, upcoming section, completed section).
+
+Card components for tutoring sessions.
+
+New session modal UI.
+
+Color styling applied consistently with the palette above.
+
+Fully responsive components with mobile variants.

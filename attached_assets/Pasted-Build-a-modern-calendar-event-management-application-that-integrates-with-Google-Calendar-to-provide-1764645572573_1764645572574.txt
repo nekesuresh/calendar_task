@@ -1,0 +1,154 @@
+Build a modern calendar event management application that integrates with Google Calendar to provide full CRUD operations for events. The application features a dual-view interface (list and calendar views) with automatic Google Meet link generation, timezone support, and participant management. The design follows a Modern SaaS Productivity Pattern (inspired by Linear/Notion) for a clean, efficient user experience.
+
+Technology Stack
+Frontend:
+
+React with TypeScript and Vite
+Wouter for routing (lightweight React Router alternative)
+shadcn/ui (Radix UI primitives)
+Tailwind CSS with custom HSL color system
+TanStack React Query v5 for server state management
+React Hook Form with Zod validation
+DM Sans font (Google Fonts) for primary text, Fira Code for monospace
+Dark mode support with theme provider
+Backend:
+
+Express.js with TypeScript on Node.js
+Native Node.js http module for server creation
+Google Calendar API (via googleapis library)
+Replit Connector for OAuth management
+Zod for runtime validation
+Build & Deployment:
+
+Vite for frontend bundling and development
+esbuild for server-side bundling
+PostgreSQL with Drizzle ORM (configured but not actively used for event storage)
+Data Models & Schemas
+Event Schema (shared/schema.ts)
+export const eventSchema = z.object({
+  id: z.string(),
+  title: z.string().min(1).max(100),
+  startTime: z.string(), // ISO 8601 format
+  endTime: z.string(), // ISO 8601 format
+  timezone: z.string(), // IANA timezone name
+  participants: z.array(z.string().email()).max(6),
+  meetLink: z.string().url().optional().nullable(),
+  recordingUrl: z.string().url().optional().nullable(),
+  description: z.string().optional().nullable(),
+});
+export const insertEventSchema = z.object({
+  title: z.string().min(1, "Title is required").max(100, "Title must be 100 characters or less"),
+  startTime: z.string().min(1, "Start time is required"),
+  endTime: z.string().min(1, "End time is required"),
+  timezone: z.string().min(1, "Timezone is required"),
+  participants: z.array(z.string().email("Invalid email address")).max(6, "Maximum 6 participants allowed"),
+  description: z.string().optional().nullable(),
+}).refine((data) => {
+  const start = new Date(data.startTime);
+  const end = new Date(data.endTime);
+  return end > start;
+}, {
+  message: "End time must be after start time",
+  path: ["endTime"],
+});
+export const organizerSchema = z.object({
+  email: z.string().email(),
+  name: z.string().optional(),
+});
+
+API Endpoints
+GET /api/organizer
+Returns authenticated user's Google account information.
+
+Response: { email: string, name?: string }
+GET /api/events
+Lists all calendar events from 30 days past to 365 days in the future.
+
+Response: Array of Event objects
+POST /api/events
+Creates a new event with automatic Google Meet link generation.
+
+Request Body: { title, startTime, endTime, timezone, participants, description? }
+Response: Created Event object
+Features: Sends invitations to participants, creates Google Meet link
+PUT /api/events/:id
+Updates an existing event while preserving the Google Meet link.
+
+Request Body: Same as POST
+Response: Updated Event object
+DELETE /api/events/:id
+Deletes an event from Google Calendar.
+
+Response: 204 No Content
+Frontend Architecture
+Routing (Wouter)
+/ → Home page (landing/intro)
+/calendar → Main calendar application
+Handled in client/src/App.tsx
+Pages
+Home Page (client/src/pages/home.tsx) - Landing page with project intro and link to calendar
+Calendar Page (client/src/pages/calendar-page.tsx) - Main application with calendar views and event management
+Key Components
+Header (client/src/components/header.tsx)
+
+Contains "Create Event" button
+Navigation and theme toggle
+Calendar View (client/src/components/calendar-view.tsx)
+
+Three view modes: Day, Week, Month
+Click events to edit, click dates to create
+Displays upcoming and past events
+Event Form Modal (client/src/components/event-form-modal.tsx)
+
+Create/Edit form with all event fields
+Participant management (max 6)
+Timezone selector with 30+ common timezones
+DateTime inputs with local formatting
+Form validation with Zod
+Event Card (client/src/components/event-card.tsx)
+
+Displays event in list view
+Shows title, time with timezone badge
+Participant count, Meet link button
+Edit/Delete action buttons
+Delete Confirm Dialog (client/src/components/delete-confirm-dialog.tsx)
+
+Confirmation before deletion
+Shows event being deleted
+Loading Skeletons (client/src/components/loading-skeletons.tsx)
+
+Calendar skeleton for loading state
+Animated pulse effect
+Empty State (client/src/components/empty-state.tsx)
+
+Message when no events exist
+CTA to create first event
+Theme Components
+
+theme-provider.tsx - Theme state management with localStorage persistence
+theme-toggle.tsx - Light/dark/system mode toggle button
+State Management
+React Query: Fetches and caches events and organizer data
+React Hook Form: Form state and validation
+Local State: Modal open/close, selected event, date selection
+Backend Architecture
+Google Calendar Integration (server/google-calendar.ts)
+// Gets fresh access token from Replit Connector
+async function getAccessToken()
+// Creates uncacheable Google Calendar client (always fresh)
+export async function getUncachableGoogleCalendarClient()
+// Gets organizer email from Google Calendar
+export async function getOrganizerEmail()
+
+Important: Never cache the client - access tokens expire, always create fresh clients.
+
+Routes (server/routes.ts)
+Implements all 5 API endpoints above
+Validates requests with Zod schemas
+Transforms Google Calendar API responses to Event format
+Error handling with appropriate HTTP status codes
+Server Entry (server/index.ts)
+Creates Express app
+Sets up middleware for JSON parsing
+Registers routes
+Listens on 0.0.0.0:5000
