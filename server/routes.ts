@@ -1,16 +1,223 @@
 import type { Express } from "express";
-import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { type Server } from "http";
+import { getUncachableGoogleCalendarClient, getOrganizerEmail } from "./google-calendar";
+import { insertEventSchema, type Event, type Organizer } from "@shared/schema";
+import { fromZodError } from "zod-validation-error";
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  // put application routes here
-  // prefix all routes with /api
+  
+  // Get organizer information
+  app.get("/api/organizer", async (req, res) => {
+    try {
+      const calendar = await getUncachableGoogleCalendarClient();
+      const calendarList = await calendar.calendarList.list();
+      const primaryCalendar = calendarList.data.items?.find(cal => cal.primary);
+      
+      const organizer: Organizer = {
+        email: primaryCalendar?.id || 'primary',
+        name: primaryCalendar?.summary,
+      };
+      
+      res.json(organizer);
+    } catch (error: any) {
+      console.error('Error getting organizer:', error);
+      res.status(500).json({ message: error.message || 'Failed to get organizer information' });
+    }
+  });
 
-  // use storage to perform CRUD operations on the storage interface
-  // e.g. storage.insertUser(user) or storage.getUserByUsername(username)
+  // List all events
+  app.get("/api/events", async (req, res) => {
+    try {
+      const calendar = await getUncachableGoogleCalendarClient();
+      
+      const now = new Date();
+      const pastDate = new Date(now);
+      pastDate.setDate(pastDate.getDate() - 30);
+      
+      const futureDate = new Date(now);
+      futureDate.setDate(futureDate.getDate() + 365);
+      
+      const response = await calendar.events.list({
+        calendarId: 'primary',
+        timeMin: pastDate.toISOString(),
+        timeMax: futureDate.toISOString(),
+        singleEvents: true,
+        orderBy: 'startTime',
+      });
+
+      const events: Event[] = (response.data.items || []).map((event: any) => ({
+        id: event.id || '',
+        title: event.summary || 'Untitled Session',
+        subject: event.extendedProperties?.private?.subject || null,
+        startTime: event.start?.dateTime || event.start?.date || '',
+        endTime: event.end?.dateTime || event.end?.date || '',
+        timezone: event.start?.timeZone || 'UTC',
+        participants: (event.attendees || []).map((a: any) => a.email).filter(Boolean),
+        meetLink: event.hangoutLink || event.conferenceData?.entryPoints?.[0]?.uri || null,
+        description: event.description || null,
+      }));
+
+      res.json(events);
+    } catch (error: any) {
+      console.error('Error listing events:', error);
+      res.status(500).json({ message: error.message || 'Failed to list events' });
+    }
+  });
+
+  // Create new event
+  app.post("/api/events", async (req, res) => {
+    try {
+      const validationResult = insertEventSchema.safeParse(req.body);
+      
+      if (!validationResult.success) {
+        const errorMessage = fromZodError(validationResult.error).message;
+        return res.status(400).json({ message: errorMessage });
+      }
+
+      const eventData = validationResult.data;
+      const calendar = await getUncachableGoogleCalendarClient();
+
+      const attendees = eventData.participants.map(email => ({ email }));
+
+      const newEvent = {
+        summary: eventData.title,
+        description: eventData.description || undefined,
+        start: {
+          dateTime: eventData.startTime,
+          timeZone: eventData.timezone,
+        },
+        end: {
+          dateTime: eventData.endTime,
+          timeZone: eventData.timezone,
+        },
+        attendees,
+        conferenceData: {
+          createRequest: {
+            requestId: `${Date.now()}-${Math.random().toString(36).substring(7)}`,
+            conferenceSolutionKey: { type: 'hangoutsMeet' },
+          },
+        },
+        extendedProperties: {
+          private: {
+            subject: eventData.subject || '',
+          },
+        },
+      };
+
+      const response = await calendar.events.insert({
+        calendarId: 'primary',
+        conferenceDataVersion: 1,
+        requestBody: newEvent,
+        sendUpdates: 'all',
+      });
+
+      const createdEvent: Event = {
+        id: response.data.id || '',
+        title: response.data.summary || '',
+        subject: response.data.extendedProperties?.private?.subject || null,
+        startTime: response.data.start?.dateTime || response.data.start?.date || '',
+        endTime: response.data.end?.dateTime || response.data.end?.date || '',
+        timezone: response.data.start?.timeZone || 'UTC',
+        participants: (response.data.attendees || []).map((a: any) => a.email).filter(Boolean),
+        meetLink: response.data.hangoutLink || response.data.conferenceData?.entryPoints?.[0]?.uri || null,
+        description: response.data.description || null,
+      };
+
+      res.status(201).json(createdEvent);
+    } catch (error: any) {
+      console.error('Error creating event:', error);
+      res.status(500).json({ message: error.message || 'Failed to create event' });
+    }
+  });
+
+  // Update event
+  app.put("/api/events/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const validationResult = insertEventSchema.safeParse(req.body);
+      
+      if (!validationResult.success) {
+        const errorMessage = fromZodError(validationResult.error).message;
+        return res.status(400).json({ message: errorMessage });
+      }
+
+      const eventData = validationResult.data;
+      const calendar = await getUncachableGoogleCalendarClient();
+
+      const existingEvent = await calendar.events.get({
+        calendarId: 'primary',
+        eventId: id,
+      });
+
+      const attendees = eventData.participants.map(email => ({ email }));
+
+      const updatedEvent = {
+        summary: eventData.title,
+        description: eventData.description || undefined,
+        start: {
+          dateTime: eventData.startTime,
+          timeZone: eventData.timezone,
+        },
+        end: {
+          dateTime: eventData.endTime,
+          timeZone: eventData.timezone,
+        },
+        attendees,
+        conferenceData: existingEvent.data.conferenceData,
+        extendedProperties: {
+          private: {
+            subject: eventData.subject || '',
+          },
+        },
+      };
+
+      const response = await calendar.events.update({
+        calendarId: 'primary',
+        eventId: id,
+        requestBody: updatedEvent,
+        sendUpdates: 'all',
+      });
+
+      const event: Event = {
+        id: response.data.id || '',
+        title: response.data.summary || '',
+        subject: response.data.extendedProperties?.private?.subject || null,
+        startTime: response.data.start?.dateTime || response.data.start?.date || '',
+        endTime: response.data.end?.dateTime || response.data.end?.date || '',
+        timezone: response.data.start?.timeZone || 'UTC',
+        participants: (response.data.attendees || []).map((a: any) => a.email).filter(Boolean),
+        meetLink: response.data.hangoutLink || response.data.conferenceData?.entryPoints?.[0]?.uri || null,
+        description: response.data.description || null,
+      };
+
+      res.json(event);
+    } catch (error: any) {
+      console.error('Error updating event:', error);
+      res.status(500).json({ message: error.message || 'Failed to update event' });
+    }
+  });
+
+  // Delete event
+  app.delete("/api/events/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const calendar = await getUncachableGoogleCalendarClient();
+
+      await calendar.events.delete({
+        calendarId: 'primary',
+        eventId: id,
+        sendUpdates: 'all',
+      });
+
+      res.status(204).send();
+    } catch (error: any) {
+      console.error('Error deleting event:', error);
+      res.status(500).json({ message: error.message || 'Failed to delete event' });
+    }
+  });
 
   return httpServer;
 }
