@@ -61,12 +61,14 @@ export async function registerRoutes(
         return !eventType || eventType === 'default';
       });
 
-      // Fetch recordings from Google Drive
+      // Fetch recordings from Google Drive (graceful fallback if Drive not connected)
       let recordings: Array<{ fileId: string; webViewLink: string; name: string; createdTime: string }> = [];
+      let driveAvailable = true;
       try {
         recordings = await getRecentRecordings();
       } catch (error: any) {
-        console.log('Could not fetch recordings:', error.message);
+        console.log('Google Drive not available for recordings:', error.message);
+        driveAvailable = false;
       }
 
       const events: Event[] = editableEvents.map((event: any) => {
@@ -79,7 +81,7 @@ export async function registerRoutes(
         let recordingStatus: RecordingStatus = 'not_available';
         let recordingUrl: string | null = null;
         
-        if (meetLink && isPastEvent) {
+        if (meetLink && isPastEvent && driveAvailable) {
           // Extract meeting code from the Meet link
           const meetCodeMatch = meetLink.match(/meet\.google\.com\/([a-z]{3}-[a-z]{4}-[a-z]{3})/i);
           const eventTitle = (event.summary || '').toLowerCase();
@@ -114,6 +116,9 @@ export async function registerRoutes(
               recordingStatus = 'pending';
             }
           }
+        } else if (meetLink && isPastEvent && !driveAvailable) {
+          // Drive not available, can't check for recordings
+          recordingStatus = 'pending';
         }
         
         return {
