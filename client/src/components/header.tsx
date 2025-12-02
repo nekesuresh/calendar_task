@@ -20,6 +20,7 @@ export function Header({ onCreateSession, activeView, onViewChange, organizerEma
     setIsLoggingOut(true);
     try {
       await fetch("/api/logout", { method: "POST" });
+      sessionStorage.setItem("justLoggedOut", "true");
       navigate("/");
     } catch (error) {
       console.error("Logout failed:", error);

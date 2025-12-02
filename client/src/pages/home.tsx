@@ -1,9 +1,19 @@
 import { useLocation } from "wouter";
-import { Calendar, Video, Users, Clock, ArrowRight } from "lucide-react";
+import { Calendar, Video, Users, Clock, ArrowRight, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
 
 export default function Home() {
   const [, navigate] = useLocation();
+  const [justLoggedOut, setJustLoggedOut] = useState(false);
+
+  useEffect(() => {
+    const logoutFlag = sessionStorage.getItem("justLoggedOut");
+    if (logoutFlag) {
+      setJustLoggedOut(true);
+      sessionStorage.removeItem("justLoggedOut");
+    }
+  }, []);
 
   const handleGetStarted = () => {
     sessionStorage.setItem("navigatedToCalendar", "true");
@@ -25,6 +35,23 @@ export default function Home() {
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto" data-testid="text-hero-description">
             Modern calendar app for scheduling and managing educational sessions with Google Calendar integration.
           </p>
+
+          {justLoggedOut && (
+            <div className="max-w-2xl mx-auto p-4 rounded-xl bg-yellow/20 border border-yellow text-left">
+              <div className="flex gap-3">
+                <AlertCircle className="h-5 w-5 text-navy flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-navy dark:text-white mb-2">To switch Google accounts:</p>
+                  <ol className="text-sm text-navy dark:text-gray-300 space-y-1 list-decimal list-inside">
+                    <li>Go to your Replit project settings</li>
+                    <li>Find "Integrations" or "Google Calendar" connector</li>
+                    <li>Click "Disconnect" to remove the current account</li>
+                    <li>Click "Get Started" below to connect a different account</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
             <Button
