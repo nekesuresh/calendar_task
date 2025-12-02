@@ -38,6 +38,7 @@ export default function CalendarPage() {
       }
       return response.json();
     },
+    refetchInterval: 2000,
   });
 
   const { data: organizer } = useQuery<Organizer>({
