@@ -76,12 +76,18 @@ export async function registerRoutes(
       const events: Event[] = await Promise.all(editableEvents.map(async (event: any) => {
         const zoomMeetingId = extractZoomMeetingId(event.description);
         let recordingLink: string | null = null;
+        let recordingPassword: string | null = null;
+        let recordingError: string | null = null;
         
         if (zoomMeetingId) {
           try {
-            recordingLink = await getZoomRecordings(zoomMeetingId);
+            const recordingResult = await getZoomRecordings(zoomMeetingId);
+            recordingLink = recordingResult.shareUrl;
+            recordingPassword = recordingResult.password || null;
+            recordingError = recordingResult.error || null;
           } catch (e) {
             console.log('Could not fetch recording for meeting:', zoomMeetingId);
+            recordingError = 'Failed to fetch recording';
           }
         }
 
@@ -105,6 +111,8 @@ export async function registerRoutes(
           participants: (event.attendees || []).map((a: any) => a.email).filter(Boolean),
           meetLink: zoomLink || event.hangoutLink || event.conferenceData?.entryPoints?.[0]?.uri || null,
           recordingLink,
+          recordingPassword,
+          recordingError,
           description: cleanDescription,
         };
       }));
@@ -174,6 +182,8 @@ export async function registerRoutes(
         participants: (response.data.attendees || []).map((a: any) => a.email).filter(Boolean),
         meetLink: zoomMeeting.joinUrl,
         recordingLink: null,
+        recordingPassword: null,
+        recordingError: null,
         description: eventData.description || null,
       };
 
@@ -248,6 +258,8 @@ export async function registerRoutes(
         participants: (response.data.attendees || []).map((a: any) => a.email).filter(Boolean),
         meetLink: existingZoomLink || null,
         recordingLink: null,
+        recordingPassword: null,
+        recordingError: null,
         description: eventData.description || null,
       };
 

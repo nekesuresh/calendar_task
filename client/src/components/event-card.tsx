@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { Calendar, Clock, Users, Video, Pencil, Trash2, Play } from "lucide-react";
+import { Calendar, Clock, Users, Video, Pencil, Trash2, Play, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { Event } from "@shared/schema";
@@ -104,37 +104,50 @@ export function EventCard({ event, onEdit, onDelete }: EventCardProps) {
       </div>
 
       {event.meetLink && (
-        <div className="mt-4 pl-2 flex gap-2">
-          <Button
-            asChild
-            className="flex-1 rounded-full bg-coral hover:bg-coral/90 text-white font-medium shadow-sm"
-            data-testid={`button-join-${event.id}`}
-          >
-            <a href={event.meetLink} target="_blank" rel="noopener noreferrer">
-              <Video className="h-4 w-4 mr-2" />
-              Join
-            </a>
-          </Button>
-          {event.recordingLink ? (
+        <div className="mt-4 pl-2">
+          <div className="flex gap-2">
             <Button
               asChild
-              className="flex-1 rounded-full bg-teal hover:bg-teal/90 text-white font-medium shadow-sm"
-              data-testid={`button-recording-${event.id}`}
+              className="flex-1 rounded-full bg-coral hover:bg-coral/90 text-white font-medium shadow-sm"
+              data-testid={`button-join-${event.id}`}
             >
-              <a href={event.recordingLink} target="_blank" rel="noopener noreferrer">
-                <Play className="h-4 w-4 mr-2" />
-                Recording
+              <a href={event.meetLink} target="_blank" rel="noopener noreferrer">
+                <Video className="h-4 w-4 mr-2" />
+                Join
               </a>
             </Button>
-          ) : (
-            <Button
-              disabled
-              className="flex-1 rounded-full bg-gray-300 text-gray-500 font-medium shadow-sm cursor-not-allowed"
-              data-testid={`button-recording-disabled-${event.id}`}
-            >
-              <Play className="h-4 w-4 mr-2" />
-              Recording
-            </Button>
+            {event.recordingLink ? (
+              <Button
+                asChild
+                className="flex-1 rounded-full bg-teal hover:bg-teal/90 text-white font-medium shadow-sm"
+                data-testid={`button-recording-${event.id}`}
+              >
+                <a href={event.recordingLink} target="_blank" rel="noopener noreferrer">
+                  <Play className="h-4 w-4 mr-2" />
+                  Recording
+                </a>
+              </Button>
+            ) : (
+              <Button
+                disabled
+                className="flex-1 rounded-full bg-gray-300 text-gray-500 font-medium shadow-sm cursor-not-allowed"
+                data-testid={`button-recording-disabled-${event.id}`}
+              >
+                <Play className="h-4 w-4 mr-2" />
+                Recording
+              </Button>
+            )}
+          </div>
+          {event.recordingLink && event.recordingPassword && (
+            <p className="mt-2 text-xs text-muted-foreground text-center" data-testid={`text-recording-password-${event.id}`}>
+              Recording password: <span className="font-mono font-medium">{event.recordingPassword}</span>
+            </p>
+          )}
+          {!event.recordingLink && event.recordingError && (
+            <div className="mt-2 flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400" data-testid={`text-recording-error-${event.id}`}>
+              <AlertCircle className="h-3 w-3 flex-shrink-0" />
+              <span>{event.recordingError}</span>
+            </div>
           )}
         </div>
       )}
