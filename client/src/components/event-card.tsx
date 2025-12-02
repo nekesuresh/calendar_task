@@ -113,7 +113,7 @@ export function EventCard({ event, onEdit, onDelete }: EventCardProps) {
             >
               <a href={event.meetLink} target="_blank" rel="noopener noreferrer">
                 <Video className="h-4 w-4 mr-2" />
-                Join Session
+                Join Zoom Meeting
               </a>
             </Button>
           )}

@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { type Server } from "http";
 import { getUncachableGoogleCalendarClient, getOrganizerEmail } from "./google-calendar";
+import { createZoomMeeting, getZoomRecordings, deleteZoomMeeting } from "./zoom";
 import { insertEventSchema, type Event, type Organizer } from "@shared/schema";
 import { fromZodError } from "zod-validation-error";
 
@@ -9,6 +10,18 @@ function formatDateTimeForGoogleCalendar(dateTime: string): string {
     return dateTime + ":00";
   }
   return dateTime;
+}
+
+function extractZoomMeetingId(description: string | null | undefined): number | null {
+  if (!description) return null;
+  const match = description.match(/\[ZoomMeetingId:(\d+)\]/);
+  return match ? parseInt(match[1], 10) : null;
+}
+
+function calculateDurationMinutes(startTime: string, endTime: string): number {
+  const start = new Date(startTime);
+  const end = new Date(endTime);
+  return Math.round((end.getTime() - start.getTime()) / 60000);
 }
 
 export async function registerRoutes(
@@ -60,15 +73,40 @@ export async function registerRoutes(
         return !eventType || eventType === 'default';
       });
 
-      const events: Event[] = editableEvents.map((event: any) => ({
-        id: event.id || '',
-        title: event.summary || 'Untitled Session',
-        startTime: event.start?.dateTime || event.start?.date || '',
-        endTime: event.end?.dateTime || event.end?.date || '',
-        timezone: event.start?.timeZone || 'UTC',
-        participants: (event.attendees || []).map((a: any) => a.email).filter(Boolean),
-        meetLink: event.hangoutLink || event.conferenceData?.entryPoints?.[0]?.uri || null,
-        description: event.description || null,
+      const events: Event[] = await Promise.all(editableEvents.map(async (event: any) => {
+        const zoomMeetingId = extractZoomMeetingId(event.description);
+        let recordingLink: string | null = null;
+        
+        if (zoomMeetingId) {
+          try {
+            recordingLink = await getZoomRecordings(zoomMeetingId);
+          } catch (e) {
+            console.log('Could not fetch recording for meeting:', zoomMeetingId);
+          }
+        }
+
+        const zoomLinkMatch = event.description?.match(/Zoom Meeting: (https:\/\/[^\s\n]+)/);
+        const zoomLink = zoomLinkMatch ? zoomLinkMatch[1] : null;
+
+        let cleanDescription = event.description || null;
+        if (cleanDescription) {
+          cleanDescription = cleanDescription
+            .replace(/\n\nZoom Meeting: https:\/\/[^\s\n]+/, '')
+            .replace(/\n\[ZoomMeetingId:\d+\]/, '')
+            .trim() || null;
+        }
+
+        return {
+          id: event.id || '',
+          title: event.summary || 'Untitled Session',
+          startTime: event.start?.dateTime || event.start?.date || '',
+          endTime: event.end?.dateTime || event.end?.date || '',
+          timezone: event.start?.timeZone || 'UTC',
+          participants: (event.attendees || []).map((a: any) => a.email).filter(Boolean),
+          meetLink: zoomLink || event.hangoutLink || event.conferenceData?.entryPoints?.[0]?.uri || null,
+          recordingLink,
+          description: cleanDescription,
+        };
       }));
 
       res.json(events);
@@ -89,13 +127,27 @@ export async function registerRoutes(
       }
 
       const eventData = validationResult.data;
+      
+      const zoomMeeting = await createZoomMeeting({
+        topic: eventData.title,
+        startTime: formatDateTimeForGoogleCalendar(eventData.startTime),
+        duration: calculateDurationMinutes(eventData.startTime, eventData.endTime),
+        timezone: eventData.timezone,
+      });
+
       const calendar = await getUncachableGoogleCalendarClient();
 
       const attendees = eventData.participants.map(email => ({ email }));
 
+      const descriptionWithZoom = [
+        eventData.description || '',
+        `\n\nZoom Meeting: ${zoomMeeting.joinUrl}`,
+        `\n[ZoomMeetingId:${zoomMeeting.id}]`
+      ].join('');
+
       const newEvent = {
         summary: eventData.title,
-        description: eventData.description || undefined,
+        description: descriptionWithZoom,
         start: {
           dateTime: formatDateTimeForGoogleCalendar(eventData.startTime),
           timeZone: eventData.timezone,
@@ -105,17 +157,10 @@ export async function registerRoutes(
           timeZone: eventData.timezone,
         },
         attendees,
-        conferenceData: {
-          createRequest: {
-            requestId: `${Date.now()}-${Math.random().toString(36).substring(7)}`,
-            conferenceSolutionKey: { type: 'hangoutsMeet' },
-          },
-        },
       };
 
       const response = await calendar.events.insert({
         calendarId: 'primary',
-        conferenceDataVersion: 1,
         requestBody: newEvent,
         sendUpdates: 'all',
       });
@@ -127,8 +172,9 @@ export async function registerRoutes(
         endTime: response.data.end?.dateTime || response.data.end?.date || '',
         timezone: response.data.start?.timeZone || 'UTC',
         participants: (response.data.attendees || []).map((a: any) => a.email).filter(Boolean),
-        meetLink: response.data.hangoutLink || response.data.conferenceData?.entryPoints?.[0]?.uri || null,
-        description: response.data.description || null,
+        meetLink: zoomMeeting.joinUrl,
+        recordingLink: null,
+        description: eventData.description || null,
       };
 
       res.status(201).json(createdEvent);
@@ -157,11 +203,24 @@ export async function registerRoutes(
         eventId: id,
       });
 
+      const existingZoomMeetingId = extractZoomMeetingId(existingEvent.data.description);
+      const zoomLinkMatch = existingEvent.data.description?.match(/Zoom Meeting: (https:\/\/[^\s\n]+)/);
+      const existingZoomLink = zoomLinkMatch ? zoomLinkMatch[1] : null;
+
       const attendees = eventData.participants.map(email => ({ email }));
+
+      let descriptionWithZoom = eventData.description || '';
+      if (existingZoomLink && existingZoomMeetingId) {
+        descriptionWithZoom = [
+          eventData.description || '',
+          `\n\nZoom Meeting: ${existingZoomLink}`,
+          `\n[ZoomMeetingId:${existingZoomMeetingId}]`
+        ].join('');
+      }
 
       const updatedEvent = {
         summary: eventData.title,
-        description: eventData.description || undefined,
+        description: descriptionWithZoom,
         start: {
           dateTime: formatDateTimeForGoogleCalendar(eventData.startTime),
           timeZone: eventData.timezone,
@@ -171,7 +230,6 @@ export async function registerRoutes(
           timeZone: eventData.timezone,
         },
         attendees,
-        conferenceData: existingEvent.data.conferenceData,
       };
 
       const response = await calendar.events.update({
@@ -188,8 +246,9 @@ export async function registerRoutes(
         endTime: response.data.end?.dateTime || response.data.end?.date || '',
         timezone: response.data.start?.timeZone || 'UTC',
         participants: (response.data.attendees || []).map((a: any) => a.email).filter(Boolean),
-        meetLink: response.data.hangoutLink || response.data.conferenceData?.entryPoints?.[0]?.uri || null,
-        description: response.data.description || null,
+        meetLink: existingZoomLink || null,
+        recordingLink: null,
+        description: eventData.description || null,
       };
 
       res.json(event);
@@ -204,6 +263,21 @@ export async function registerRoutes(
     try {
       const { id } = req.params;
       const calendar = await getUncachableGoogleCalendarClient();
+
+      const existingEvent = await calendar.events.get({
+        calendarId: 'primary',
+        eventId: id,
+      });
+
+      const zoomMeetingId = extractZoomMeetingId(existingEvent.data.description);
+      
+      if (zoomMeetingId) {
+        try {
+          await deleteZoomMeeting(zoomMeetingId);
+        } catch (e) {
+          console.log('Could not delete Zoom meeting:', zoomMeetingId);
+        }
+      }
 
       await calendar.events.delete({
         calendarId: 'primary',
