@@ -2,10 +2,6 @@ import { google } from 'googleapis';
 
 let connectionSettings: any;
 
-export function clearConnectionCache() {
-  connectionSettings = null;
-}
-
 async function getAccessToken() {
   if (connectionSettings && connectionSettings.settings.expires_at && new Date(connectionSettings.settings.expires_at).getTime() > Date.now()) {
     return connectionSettings.settings.access_token;

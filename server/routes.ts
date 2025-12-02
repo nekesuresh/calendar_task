@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { type Server } from "http";
-import { getUncachableGoogleCalendarClient, getOrganizerEmail, clearConnectionCache } from "./google-calendar";
+import { getUncachableGoogleCalendarClient, getOrganizerEmail } from "./google-calendar";
 import { insertEventSchema, type Event, type Organizer } from "@shared/schema";
 import { fromZodError } from "zod-validation-error";
 
@@ -215,17 +215,6 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error('Error deleting event:', error);
       res.status(500).json({ message: error.message || 'Failed to delete event' });
-    }
-  });
-
-  // Logout
-  app.post("/api/logout", async (req, res) => {
-    try {
-      clearConnectionCache();
-      res.json({ success: true });
-    } catch (error: any) {
-      console.error('Error logging out:', error);
-      res.status(500).json({ message: error.message || 'Failed to logout' });
     }
   });
 

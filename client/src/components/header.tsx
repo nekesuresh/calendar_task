@@ -1,31 +1,14 @@
-import { useState } from "react";
-import { useLocation } from "wouter";
-import { Calendar, Plus, LogOut, User } from "lucide-react";
+import { Calendar, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface HeaderProps {
   onCreateSession: () => void;
   activeView: "events" | "calendar";
   onViewChange: (view: "events" | "calendar") => void;
-  organizerEmail?: string;
 }
 
-export function Header({ onCreateSession, activeView, onViewChange, organizerEmail }: HeaderProps) {
-  const [, navigate] = useLocation();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-
-  const handleLogout = async () => {
-    setIsLoggingOut(true);
-    try {
-      await fetch("/api/logout", { method: "POST" });
-      sessionStorage.setItem("justLoggedOut", "true");
-      navigate("/");
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
-  };
+export function Header({ onCreateSession, activeView, onViewChange }: HeaderProps) {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
       <div className="container flex h-16 items-center justify-between px-4 md:px-6">
@@ -75,34 +58,6 @@ export function Header({ onCreateSession, activeView, onViewChange, organizerEma
             <Plus className="h-4 w-4 mr-2" />
             New Session
           </Button>
-          {organizerEmail && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="rounded-full"
-                  data-testid="button-user-menu"
-                >
-                  <User className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                  {organizerEmail}
-                </div>
-                <DropdownMenuItem
-                  onClick={handleLogout}
-                  disabled={isLoggingOut}
-                  data-testid="button-logout"
-                  className="text-red-600 cursor-pointer"
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  {isLoggingOut ? "Logging out..." : "Logout"}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
         </div>
       </div>
       
