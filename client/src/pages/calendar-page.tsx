@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { toast } from "sonner";
 import type { Event, InsertEvent, Organizer } from "@shared/schema";
 import { Header } from "@/components/header";
@@ -11,6 +12,15 @@ import { CalendarSkeleton } from "@/components/loading-skeletons";
 import { EmptyState } from "@/components/empty-state";
 
 export default function CalendarPage() {
+  const [location, navigate] = useLocation();
+
+  useEffect(() => {
+    const isNavigated = sessionStorage.getItem("navigatedToCalendar");
+    if (!isNavigated) {
+      navigate("/");
+    }
+    sessionStorage.removeItem("navigatedToCalendar");
+  }, [navigate]);
   const [activeView, setActiveView] = useState<"events" | "calendar">("events");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
