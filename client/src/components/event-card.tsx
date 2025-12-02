@@ -112,7 +112,7 @@ export function EventCard({ event, onEdit, onDelete }: EventCardProps) {
           >
             <a href={event.meetLink} target="_blank" rel="noopener noreferrer">
               <Video className="h-4 w-4 mr-2" />
-              Join Zoom Meeting
+              Join
             </a>
           </Button>
           {event.recordingLink ? (
@@ -123,7 +123,7 @@ export function EventCard({ event, onEdit, onDelete }: EventCardProps) {
             >
               <a href={event.recordingLink} target="_blank" rel="noopener noreferrer">
                 <Play className="h-4 w-4 mr-2" />
-                View Recording
+                Recording
               </a>
             </Button>
           ) : (
@@ -133,7 +133,7 @@ export function EventCard({ event, onEdit, onDelete }: EventCardProps) {
               data-testid={`button-recording-disabled-${event.id}`}
             >
               <Play className="h-4 w-4 mr-2" />
-              View Recording
+              Recording
             </Button>
           )}
         </div>
