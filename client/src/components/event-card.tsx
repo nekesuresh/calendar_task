@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { Calendar, Clock, Users, Video, Pencil, Trash2, BookOpen } from "lucide-react";
+import { Calendar, Clock, Users, Video, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { Event } from "@shared/schema";
@@ -10,22 +10,10 @@ interface EventCardProps {
   onDelete: (event: Event) => void;
 }
 
-const subjectColors: Record<string, string> = {
-  "Math": "bg-teal/20 text-teal border-teal/30",
-  "Science": "bg-secondary/20 text-secondary border-secondary/30",
-  "English": "bg-yellow/20 text-navy border-yellow/30",
-  "History": "bg-coral/20 text-coral border-coral/30",
-  "": "bg-muted text-muted-foreground border-muted"
-};
-
 export function EventCard({ event, onEdit, onDelete }: EventCardProps) {
   const startDate = new Date(event.startTime);
   const endDate = new Date(event.endTime);
   const isPast = endDate < new Date();
-
-  const subjectColor = event.subject 
-    ? (subjectColors[event.subject] || "bg-muted text-muted-foreground border-muted")
-    : "";
 
   return (
     <div 
@@ -34,29 +22,10 @@ export function EventCard({ event, onEdit, onDelete }: EventCardProps) {
       }`}
       data-testid={`card-event-${event.id}`}
     >
-      <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${
-        event.subject === 'Math' ? 'bg-teal' :
-        event.subject === 'Science' ? 'bg-secondary' :
-        event.subject === 'English' ? 'bg-yellow' :
-        event.subject === 'History' ? 'bg-coral' :
-        'bg-muted'
-      }`} />
+      <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-teal" />
       
       <div className="flex items-start justify-between gap-4 pl-2">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-2">
-            {event.subject && (
-              <Badge 
-                variant="outline" 
-                className={`rounded-full font-medium ${subjectColor}`}
-                data-testid={`badge-subject-${event.id}`}
-              >
-                <BookOpen className="h-3 w-3 mr-1" />
-                {event.subject}
-              </Badge>
-            )}
-          </div>
-          
           <h3 
             className="text-lg font-bold text-navy dark:text-white mb-3 truncate"
             data-testid={`text-title-${event.id}`}

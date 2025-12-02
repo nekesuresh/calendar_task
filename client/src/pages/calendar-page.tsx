@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import type { Event, InsertEvent, Organizer } from "@shared/schema";
 import { Header } from "@/components/header";
 import { CalendarView } from "@/components/calendar-view";
+import { MonthCalendar } from "@/components/month-calendar";
 import { EventFormModal } from "@/components/event-form-modal";
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
 import { CalendarSkeleton } from "@/components/loading-skeletons";
@@ -14,7 +15,7 @@ export default function CalendarPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -58,6 +59,7 @@ export default function CalendarPage() {
       toast.success("Session created successfully!");
       setIsFormOpen(false);
       setSelectedEvent(null);
+      setSelectedDate(null);
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -111,6 +113,7 @@ export default function CalendarPage() {
 
   const handleCreateSession = () => {
     setSelectedEvent(null);
+    setSelectedDate(null);
     setIsFormOpen(true);
   };
 
@@ -122,6 +125,12 @@ export default function CalendarPage() {
   const handleDeleteEvent = (event: Event) => {
     setSelectedEvent(event);
     setIsDeleteOpen(true);
+  };
+
+  const handleDateClick = (date: Date) => {
+    setSelectedEvent(null);
+    setSelectedDate(date);
+    setIsFormOpen(true);
   };
 
   const handleFormSubmit = (data: InsertEvent) => {
@@ -149,14 +158,22 @@ export default function CalendarPage() {
       <main className="container mx-auto px-4 md:px-6 py-8">
         {eventsLoading ? (
           <CalendarSkeleton />
-        ) : events.length === 0 ? (
-          <EmptyState onCreateSession={handleCreateSession} />
+        ) : activeView === "events" ? (
+          events.length === 0 ? (
+            <EmptyState onCreateSession={handleCreateSession} />
+          ) : (
+            <CalendarView
+              events={events}
+              onEdit={handleEditEvent}
+              onDelete={handleDeleteEvent}
+              currentDate={new Date()}
+            />
+          )
         ) : (
-          <CalendarView
+          <MonthCalendar
             events={events}
-            onEdit={handleEditEvent}
-            onDelete={handleDeleteEvent}
-            currentDate={currentDate}
+            onEventClick={handleEditEvent}
+            onDateClick={handleDateClick}
           />
         )}
       </main>
@@ -166,10 +183,13 @@ export default function CalendarPage() {
         onClose={() => {
           setIsFormOpen(false);
           setSelectedEvent(null);
+          setSelectedDate(null);
         }}
         onSubmit={handleFormSubmit}
         event={selectedEvent}
         isLoading={createMutation.isPending || updateMutation.isPending}
+        organizerEmail={organizer?.email}
+        selectedDate={selectedDate}
       />
 
       <DeleteConfirmDialog

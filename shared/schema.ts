@@ -3,7 +3,6 @@ import { z } from "zod";
 export const eventSchema = z.object({
   id: z.string(),
   title: z.string().min(1).max(100),
-  subject: z.string().optional().nullable(),
   startTime: z.string(),
   endTime: z.string(),
   timezone: z.string(),
@@ -14,7 +13,6 @@ export const eventSchema = z.object({
 
 export const insertEventSchema = z.object({
   title: z.string().min(1, "Session title is required").max(100, "Title must be 100 characters or less"),
-  subject: z.string().optional().nullable(),
   startTime: z.string().min(1, "Start time is required"),
   endTime: z.string().min(1, "End time is required"),
   timezone: z.string().min(1, "Timezone is required"),

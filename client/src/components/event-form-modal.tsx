@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { X, Plus, Trash2 } from "lucide-react";
+import { X, Plus } from "lucide-react";
 import { insertEventSchema, type InsertEvent, type Event } from "@shared/schema";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +17,8 @@ interface EventFormModalProps {
   onSubmit: (data: InsertEvent) => void;
   event?: Event | null;
   isLoading?: boolean;
+  organizerEmail?: string;
+  selectedDate?: Date | null;
 }
 
 const TIMEZONES = [
@@ -38,9 +40,7 @@ const TIMEZONES = [
   "UTC",
 ];
 
-const SUBJECTS = ["Math", "Science", "English", "History", "Other"];
-
-export function EventFormModal({ isOpen, onClose, onSubmit, event, isLoading }: EventFormModalProps) {
+export function EventFormModal({ isOpen, onClose, onSubmit, event, isLoading, organizerEmail, selectedDate }: EventFormModalProps) {
   const [participants, setParticipants] = useState<string[]>([]);
   const [newParticipant, setNewParticipant] = useState("");
   
@@ -58,37 +58,50 @@ export function EventFormModal({ isOpen, onClose, onSubmit, event, isLoading }: 
     },
   });
 
-  const selectedSubject = watch("subject");
   const selectedTimezone = watch("timezone");
 
   useEffect(() => {
     if (event) {
+      let eventParticipants = [...event.participants];
+      if (organizerEmail && !eventParticipants.includes(organizerEmail)) {
+        eventParticipants = [organizerEmail, ...eventParticipants];
+      }
       reset({
         title: event.title,
-        subject: event.subject || undefined,
         startTime: event.startTime.slice(0, 16),
         endTime: event.endTime.slice(0, 16),
         timezone: event.timezone,
         description: event.description || undefined,
-        participants: event.participants,
+        participants: eventParticipants,
       });
-      setParticipants(event.participants);
+      setParticipants(eventParticipants);
     } else {
+      const defaultParticipants = organizerEmail ? [organizerEmail] : [];
+      
+      let startTime = "";
+      let endTime = "";
+      if (selectedDate) {
+        const date = new Date(selectedDate);
+        date.setHours(9, 0, 0, 0);
+        startTime = date.toISOString().slice(0, 16);
+        date.setHours(10, 0, 0, 0);
+        endTime = date.toISOString().slice(0, 16);
+      }
+      
       reset({
         title: "",
-        subject: undefined,
-        startTime: "",
-        endTime: "",
+        startTime,
+        endTime,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         description: "",
-        participants: [],
+        participants: defaultParticipants,
       });
-      setParticipants([]);
+      setParticipants(defaultParticipants);
     }
-  }, [event, reset]);
+  }, [event, reset, organizerEmail, isOpen, selectedDate]);
 
   const handleAddParticipant = () => {
-    if (newParticipant && participants.length < 6) {
+    if (newParticipant && participants.length < 6 && !participants.includes(newParticipant)) {
       const updatedParticipants = [...participants, newParticipant];
       setParticipants(updatedParticipants);
       setValue("participants", updatedParticipants);
@@ -116,6 +129,9 @@ export function EventFormModal({ isOpen, onClose, onSubmit, event, isLoading }: 
           <DialogTitle className="text-2xl font-bold text-navy dark:text-white" data-testid="text-modal-title">
             {event ? "Edit Session" : "New Tutoring Session"}
           </DialogTitle>
+          <DialogDescription className="text-muted-foreground">
+            {event ? "Update the session details below." : "Fill in the details to create a new tutoring session."}
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
@@ -133,24 +149,6 @@ export function EventFormModal({ isOpen, onClose, onSubmit, event, isLoading }: 
             {errors.title && (
               <p className="text-sm text-destructive" data-testid="error-title">{errors.title.message}</p>
             )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="subject" className="text-sm font-semibold">
-              Subject
-            </Label>
-            <Select value={selectedSubject || ""} onValueChange={(value) => setValue("subject", value)}>
-              <SelectTrigger data-testid="select-subject" className="rounded-xl">
-                <SelectValue placeholder="Select subject" />
-              </SelectTrigger>
-              <SelectContent>
-                {SUBJECTS.map((subject) => (
-                  <SelectItem key={subject} value={subject}>
-                    {subject}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

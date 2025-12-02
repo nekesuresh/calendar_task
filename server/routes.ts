@@ -51,7 +51,6 @@ export async function registerRoutes(
       const events: Event[] = (response.data.items || []).map((event: any) => ({
         id: event.id || '',
         title: event.summary || 'Untitled Session',
-        subject: event.extendedProperties?.private?.subject || null,
         startTime: event.start?.dateTime || event.start?.date || '',
         endTime: event.end?.dateTime || event.end?.date || '',
         timezone: event.start?.timeZone || 'UTC',
@@ -100,11 +99,6 @@ export async function registerRoutes(
             conferenceSolutionKey: { type: 'hangoutsMeet' },
           },
         },
-        extendedProperties: {
-          private: {
-            subject: eventData.subject || '',
-          },
-        },
       };
 
       const response = await calendar.events.insert({
@@ -117,7 +111,6 @@ export async function registerRoutes(
       const createdEvent: Event = {
         id: response.data.id || '',
         title: response.data.summary || '',
-        subject: response.data.extendedProperties?.private?.subject || null,
         startTime: response.data.start?.dateTime || response.data.start?.date || '',
         endTime: response.data.end?.dateTime || response.data.end?.date || '',
         timezone: response.data.start?.timeZone || 'UTC',
@@ -167,11 +160,6 @@ export async function registerRoutes(
         },
         attendees,
         conferenceData: existingEvent.data.conferenceData,
-        extendedProperties: {
-          private: {
-            subject: eventData.subject || '',
-          },
-        },
       };
 
       const response = await calendar.events.update({
@@ -184,7 +172,6 @@ export async function registerRoutes(
       const event: Event = {
         id: response.data.id || '',
         title: response.data.summary || '',
-        subject: response.data.extendedProperties?.private?.subject || null,
         startTime: response.data.start?.dateTime || response.data.start?.date || '',
         endTime: response.data.end?.dateTime || response.data.end?.date || '',
         timezone: response.data.start?.timeZone || 'UTC',
