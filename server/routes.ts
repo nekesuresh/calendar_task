@@ -18,7 +18,7 @@ export async function registerRoutes(
       
       const organizer: Organizer = {
         email: primaryCalendar?.id || 'primary',
-        name: primaryCalendar?.summary,
+        name: primaryCalendar?.summary || undefined,
       };
       
       res.json(organizer);
