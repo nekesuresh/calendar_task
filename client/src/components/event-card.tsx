@@ -103,30 +103,37 @@ export function EventCard({ event, onEdit, onDelete }: EventCardProps) {
         </div>
       </div>
 
-      {(event.meetLink || event.recordingLink) && (
-        <div className="mt-4 pl-2 space-y-2">
-          {event.meetLink && (
+      {event.meetLink && (
+        <div className="mt-4 pl-2 flex gap-2">
+          <Button
+            asChild
+            className="flex-1 rounded-full bg-coral hover:bg-coral/90 text-white font-medium shadow-sm"
+            data-testid={`button-join-${event.id}`}
+          >
+            <a href={event.meetLink} target="_blank" rel="noopener noreferrer">
+              <Video className="h-4 w-4 mr-2" />
+              Join Zoom Meeting
+            </a>
+          </Button>
+          {event.recordingLink ? (
             <Button
               asChild
-              className="w-full rounded-full bg-coral hover:bg-coral/90 text-white font-medium shadow-sm"
-              data-testid={`button-join-${event.id}`}
-            >
-              <a href={event.meetLink} target="_blank" rel="noopener noreferrer">
-                <Video className="h-4 w-4 mr-2" />
-                Join Zoom Meeting
-              </a>
-            </Button>
-          )}
-          {event.recordingLink && (
-            <Button
-              asChild
-              className="w-full rounded-full bg-teal hover:bg-teal/90 text-white font-medium shadow-sm"
+              className="flex-1 rounded-full bg-teal hover:bg-teal/90 text-white font-medium shadow-sm"
               data-testid={`button-recording-${event.id}`}
             >
               <a href={event.recordingLink} target="_blank" rel="noopener noreferrer">
                 <Play className="h-4 w-4 mr-2" />
-                Watch Recording
+                View Recording
               </a>
+            </Button>
+          ) : (
+            <Button
+              disabled
+              className="flex-1 rounded-full bg-gray-300 text-gray-500 font-medium shadow-sm cursor-not-allowed"
+              data-testid={`button-recording-disabled-${event.id}`}
+            >
+              <Play className="h-4 w-4 mr-2" />
+              View Recording
             </Button>
           )}
         </div>
