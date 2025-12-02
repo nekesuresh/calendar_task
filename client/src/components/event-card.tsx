@@ -104,11 +104,11 @@ export function EventCard({ event, onEdit, onDelete }: EventCardProps) {
         </div>
       </div>
 
-      <div className="mt-4 pl-2 flex gap-2">
+      <div className="mt-4 pl-2 flex flex-col sm:flex-row gap-2">
         {event.meetLink && !isPast && (
           <Button
             asChild
-            className="flex-1 rounded-full bg-coral hover:bg-coral/90 text-white font-medium shadow-sm"
+            className="w-full sm:flex-1 rounded-full bg-coral hover:bg-coral/90 text-white font-medium shadow-sm"
             data-testid={`button-join-${event.id}`}
           >
             <a href={event.meetLink} target="_blank" rel="noopener noreferrer">
@@ -123,7 +123,7 @@ export function EventCard({ event, onEdit, onDelete }: EventCardProps) {
             {event.recordingStatus === 'available' && event.recordingUrl ? (
               <Button
                 asChild
-                className="flex-1 rounded-full bg-teal hover:bg-teal/90 text-white font-medium shadow-sm"
+                className="w-full sm:flex-1 rounded-full bg-teal hover:bg-teal/90 text-white font-medium shadow-sm"
                 data-testid={`button-view-recording-${event.id}`}
               >
                 <a href={event.recordingUrl} target="_blank" rel="noopener noreferrer">
@@ -136,7 +136,7 @@ export function EventCard({ event, onEdit, onDelete }: EventCardProps) {
                 <TooltipTrigger asChild>
                   <Button
                     disabled
-                    className="flex-1 rounded-full bg-muted text-muted-foreground font-medium shadow-sm cursor-not-allowed"
+                    className="w-full sm:flex-1 rounded-full bg-muted text-muted-foreground font-medium shadow-sm cursor-not-allowed"
                     data-testid={`button-recording-locked-${event.id}`}
                   >
                     <Lock className="h-4 w-4 mr-2" />
