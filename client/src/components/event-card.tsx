@@ -113,7 +113,7 @@ export function EventCard({ event, onEdit, onDelete }: EventCardProps) {
           >
             <a href={event.meetLink} target="_blank" rel="noopener noreferrer">
               <Video className="h-4 w-4 mr-2" />
-              Join Session
+              Join
             </a>
           </Button>
         )}
@@ -128,7 +128,7 @@ export function EventCard({ event, onEdit, onDelete }: EventCardProps) {
               >
                 <a href={event.recordingUrl} target="_blank" rel="noopener noreferrer">
                   <Play className="h-4 w-4 mr-2" />
-                  View Recording
+                  View
                 </a>
               </Button>
             ) : (
@@ -140,7 +140,7 @@ export function EventCard({ event, onEdit, onDelete }: EventCardProps) {
                     data-testid={`button-recording-locked-${event.id}`}
                   >
                     <Lock className="h-4 w-4 mr-2" />
-                    View Recording
+                    View
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
