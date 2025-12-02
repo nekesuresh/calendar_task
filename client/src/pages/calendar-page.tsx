@@ -163,6 +163,7 @@ export default function CalendarPage() {
         onCreateSession={handleCreateSession}
         activeView={activeView}
         onViewChange={setActiveView}
+        organizerEmail={organizer?.email}
       />
 
       <main className="container mx-auto px-4 md:px-6 py-8">
