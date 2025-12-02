@@ -4,6 +4,13 @@ import { getUncachableGoogleCalendarClient, getOrganizerEmail } from "./google-c
 import { insertEventSchema, type Event, type Organizer } from "@shared/schema";
 import { fromZodError } from "zod-validation-error";
 
+function formatDateTimeForGoogleCalendar(dateTime: string): string {
+  if (dateTime.length === 16) {
+    return dateTime + ":00";
+  }
+  return dateTime;
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -48,7 +55,12 @@ export async function registerRoutes(
         orderBy: 'startTime',
       });
 
-      const events: Event[] = (response.data.items || []).map((event: any) => ({
+      const editableEvents = (response.data.items || []).filter((event: any) => {
+        const eventType = event.eventType;
+        return !eventType || eventType === 'default';
+      });
+
+      const events: Event[] = editableEvents.map((event: any) => ({
         id: event.id || '',
         title: event.summary || 'Untitled Session',
         startTime: event.start?.dateTime || event.start?.date || '',
@@ -85,11 +97,11 @@ export async function registerRoutes(
         summary: eventData.title,
         description: eventData.description || undefined,
         start: {
-          dateTime: eventData.startTime,
+          dateTime: formatDateTimeForGoogleCalendar(eventData.startTime),
           timeZone: eventData.timezone,
         },
         end: {
-          dateTime: eventData.endTime,
+          dateTime: formatDateTimeForGoogleCalendar(eventData.endTime),
           timeZone: eventData.timezone,
         },
         attendees,
@@ -151,11 +163,11 @@ export async function registerRoutes(
         summary: eventData.title,
         description: eventData.description || undefined,
         start: {
-          dateTime: eventData.startTime,
+          dateTime: formatDateTimeForGoogleCalendar(eventData.startTime),
           timeZone: eventData.timezone,
         },
         end: {
-          dateTime: eventData.endTime,
+          dateTime: formatDateTimeForGoogleCalendar(eventData.endTime),
           timeZone: eventData.timezone,
         },
         attendees,
