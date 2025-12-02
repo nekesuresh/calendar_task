@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { Calendar, Clock, Users, Video, Pencil, Trash2, Lock, Play, Loader2 } from "lucide-react";
+import { Calendar, Clock, Users, Video, Pencil, Trash2, Lock, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -118,7 +118,7 @@ export function EventCard({ event, onEdit, onDelete }: EventCardProps) {
           </Button>
         )}
 
-        {isPast && event.meetLink && (
+        {event.meetLink && (
           <>
             {event.recordingStatus === 'available' && event.recordingUrl ? (
               <Button
@@ -131,22 +131,6 @@ export function EventCard({ event, onEdit, onDelete }: EventCardProps) {
                   View Recording
                 </a>
               </Button>
-            ) : event.recordingStatus === 'processing' ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    disabled
-                    className="flex-1 rounded-full bg-muted text-muted-foreground font-medium shadow-sm cursor-not-allowed"
-                    data-testid={`button-recording-processing-${event.id}`}
-                  >
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Processing...
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Recording is still being processed. Please check back later.</p>
-                </TooltipContent>
-              </Tooltip>
             ) : (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -160,7 +144,7 @@ export function EventCard({ event, onEdit, onDelete }: EventCardProps) {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>No recording available. Make sure to record the session in Google Meet.</p>
+                  <p>No recording available yet.</p>
                 </TooltipContent>
               </Tooltip>
             )}

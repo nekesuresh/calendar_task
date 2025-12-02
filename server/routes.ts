@@ -73,19 +73,16 @@ export async function registerRoutes(
 
       const events: Event[] = editableEvents.map((event: any) => {
         const meetLink = event.hangoutLink || event.conferenceData?.entryPoints?.[0]?.uri || null;
-        const eventEndTime = new Date(event.end?.dateTime || event.end?.date || '');
-        const now = new Date();
-        const isPastEvent = eventEndTime < now;
+        const eventDate = new Date(event.start?.dateTime || event.start?.date || '');
         
         // Try to find a matching recording for this event
         let recordingStatus: RecordingStatus = 'not_available';
         let recordingUrl: string | null = null;
         
-        if (meetLink && isPastEvent && driveAvailable) {
+        if (meetLink && driveAvailable) {
           // Extract meeting code from the Meet link
           const meetCodeMatch = meetLink.match(/meet\.google\.com\/([a-z]{3}-[a-z]{4}-[a-z]{3})/i);
           const eventTitle = (event.summary || '').toLowerCase();
-          const eventDate = new Date(event.start?.dateTime || event.start?.date || '');
           
           // Look for a recording that matches this event
           for (const recording of recordings) {
@@ -94,7 +91,7 @@ export async function registerRoutes(
             
             // Check if recording was created around the same time as the event
             const timeDiff = Math.abs(recordingDate.getTime() - eventDate.getTime());
-            const withinTimeWindow = timeDiff < 24 * 60 * 60 * 1000; // Within 24 hours
+            const withinTimeWindow = timeDiff < 48 * 60 * 60 * 1000; // Within 48 hours
             
             // Match by title similarity or meeting code
             const titleMatch = eventTitle && recordingName.includes(eventTitle.slice(0, 10));
@@ -106,19 +103,6 @@ export async function registerRoutes(
               break;
             }
           }
-          
-          // If no recording found but event is past, mark as pending (might still be processing)
-          if (recordingStatus === 'not_available') {
-            const hoursSinceEnd = (now.getTime() - eventEndTime.getTime()) / (1000 * 60 * 60);
-            if (hoursSinceEnd < 24) {
-              recordingStatus = 'processing';
-            } else {
-              recordingStatus = 'pending';
-            }
-          }
-        } else if (meetLink && isPastEvent && !driveAvailable) {
-          // Drive not available, can't check for recordings
-          recordingStatus = 'pending';
         }
         
         return {
@@ -130,7 +114,7 @@ export async function registerRoutes(
           participants: (event.attendees || []).map((a: any) => a.email).filter(Boolean),
           meetLink,
           description: event.description || null,
-          recordingStatus: isPastEvent ? recordingStatus : null,
+          recordingStatus,
           recordingUrl,
         };
       });
