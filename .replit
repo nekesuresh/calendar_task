@@ -49,4 +49,4 @@ waitForPort = 5000
 
 [agent]
 mockupState = "FULLSTACK"
-integrations = ["google-calendar:1.0.0"]
+integrations = ["google-calendar:1.0.0", "google-drive:1.0.0"]

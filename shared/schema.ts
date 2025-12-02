@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+export const recordingStatusEnum = z.enum(["pending", "processing", "available", "not_available"]);
+
 export const eventSchema = z.object({
   id: z.string(),
   title: z.string().min(1).max(100),
@@ -9,6 +11,8 @@ export const eventSchema = z.object({
   participants: z.array(z.string().email()).max(6),
   meetLink: z.string().url().optional().nullable(),
   description: z.string().optional().nullable(),
+  recordingStatus: recordingStatusEnum.optional().nullable(),
+  recordingUrl: z.string().url().optional().nullable(),
 });
 
 export const insertEventSchema = z.object({
@@ -35,3 +39,4 @@ export const organizerSchema = z.object({
 export type Event = z.infer<typeof eventSchema>;
 export type InsertEvent = z.infer<typeof insertEventSchema>;
 export type Organizer = z.infer<typeof organizerSchema>;
+export type RecordingStatus = z.infer<typeof recordingStatusEnum>;
