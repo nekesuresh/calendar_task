@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a modern tutoring calendar application that integrates with Google Calendar to provide full CRUD operations for tutoring sessions. The application features a dual-view interface (list view and monthly calendar view) with automatic Zoom meeting link generation for virtual sessions. Built with React, TypeScript, and Express, it provides a user-friendly interface for scheduling, managing, and tracking educational sessions with cloud recording access.
+This is a modern tutoring calendar application that integrates with Google Calendar to provide full CRUD operations for tutoring sessions. The application features a dual-view interface (list view and monthly calendar view) with automatic Google Meet link generation for virtual sessions. Built with React, TypeScript, and Express, it provides a user-friendly interface for scheduling, managing, and tracking educational sessions.
 
 ## User Preferences
 
@@ -39,7 +39,7 @@ Preferred communication style: Simple, everyday language.
 - `MonthCalendar`: Traditional calendar grid view with event indicators
 - `EventFormModal`: Form dialog for creating/editing sessions
 - `DeleteConfirmDialog`: Confirmation dialog for session deletion
-- `EventCard`: Individual session card with Join/Recording buttons and session details
+- `EventCard`: Individual session card with actions and session details
 
 ### Backend Architecture
 
@@ -51,22 +51,21 @@ Preferred communication style: Simple, everyday language.
 
 **API Endpoints**
 - `GET /api/organizer` - Retrieves primary calendar organizer information
-- `GET /api/events` - Lists all events with Zoom recording status (past 30 days to future 365 days)
-- `POST /api/events` - Creates new event with automatic Zoom meeting link
+- `GET /api/events` - Lists all events (past 30 days to future 365 days)
+- `POST /api/events` - Creates new event with automatic Google Meet link
 - `PATCH /api/events/:id` - Updates existing event
-- `DELETE /api/events/:id` - Deletes event from Google Calendar and Zoom
+- `DELETE /api/events/:id` - Deletes event from Google Calendar
 
 **Request/Response Flow**
 - All API requests use JSON format
 - Zod schemas validate incoming data on both client and server
 - Express middleware logs requests with timing information
-- Error responses include descriptive user-friendly messages
+- Error responses include descriptive messages
 
 ### Data Storage & Schemas
 
 **Primary Data Source**
 - Google Calendar serves as the single source of truth for event data
-- Zoom meeting IDs stored in Google Calendar event description
 - No local database storage for events (Drizzle ORM configured but unused for events)
 - Events are fetched, created, updated, and deleted directly via Google Calendar API
 
@@ -85,34 +84,25 @@ Preferred communication style: Simple, everyday language.
   endTime: string (ISO 8601)
   timezone: string (IANA timezone)
   participants: string[] (emails, max 6)
-  meetLink?: string (Zoom meeting URL)
+  meetLink?: string (Google Meet URL)
   description?: string
-  recordingLink?: string (Zoom recording share URL)
-  recordingPassword?: string (Zoom recording password)
-  recordingError?: string (user-friendly error message if recording unavailable)
 }
 ```
 
 ### Authentication & Authorization
 
-**Google Calendar OAuth Flow**
+**OAuth Flow**
 - Uses Replit Connector system for OAuth management
 - Authenticates with Google Calendar API using OAuth 2.0
 - Access tokens retrieved via Replit's connector API
 - Tokens automatically refreshed when expired
-
-**Zoom Server-to-Server OAuth**
-- Uses Server-to-Server OAuth (not user OAuth)
-- Credentials stored in Replit Secrets: ZOOM_ACCOUNT_ID, ZOOM_CLIENT_ID, ZOOM_CLIENT_SECRET
-- Token cached with automatic invalidation on 401 errors
-- Automatic retry on authentication failures
-- Required scopes: meeting:write:admin, recording:read:admin, recording:write:admin
+- No manual OAuth implementation - delegated to Replit infrastructure
 
 **Security Considerations**
 - Never caches Google Calendar client (creates fresh client per request)
-- Zoom tokens cached but invalidated automatically on auth failures
 - Access tokens expire and are refreshed automatically
 - Uses Replit identity tokens (REPL_IDENTITY or WEB_REPL_RENEWAL)
+- Connector hostname from environment variables
 
 ## External Dependencies
 
@@ -122,26 +112,11 @@ Preferred communication style: Simple, everyday language.
 - Purpose: Primary data source for calendar events
 - Integration: googleapis npm package
 - Authentication: OAuth 2.0 via Replit Connector
+- Auto-generates Google Meet links for conferences
 - Handles event CRUD operations
-- Stores Zoom meeting IDs in event description
-
-**Zoom API**
-- Purpose: Video conferencing and cloud recording
-- Authentication: Server-to-Server OAuth with token caching
-- Features:
-  - Automatic meeting creation with join links
-  - Cloud recording access with public sharing
-  - Recording password display
-  - Automatic meeting deletion on event delete
-- Error Handling:
-  - 401: Token refresh and retry
-  - 429: Rate limit with user-friendly message
-  - 403/400: Zoom Pro requirement messaging
-  - 404: No recording available (silent)
-  - 5xx: Service error messaging
 
 **Replit Connector**
-- Purpose: Google Calendar OAuth credential management
+- Purpose: OAuth credential management
 - Handles token refresh and expiration
 - Provides secure credential storage
 - Accessed via `REPLIT_CONNECTORS_HOSTNAME` environment variable
@@ -164,7 +139,7 @@ Preferred communication style: Simple, everyday language.
 - `typescript` - Type safety
 - `drizzle-orm` - ORM (configured, not actively used)
 
-**API Integrations**
+**Google Integration**
 - `googleapis` - Google Calendar API client
 - `@neondatabase/serverless` - Database driver
 
@@ -187,27 +162,3 @@ Preferred communication style: Simple, everyday language.
 - `@replit/vite-plugin-runtime-error-modal` - Error overlay
 - `@replit/vite-plugin-cartographer` - Replit integration
 - `esbuild` - Server bundling for production
-
-## Zoom Integration Details
-
-### Meeting Creation Flow
-1. User creates event in calendar
-2. Backend calls Zoom API to create meeting
-3. Meeting join URL returned and stored
-4. Zoom meeting ID stored in Google Calendar event description
-
-### Recording Access Flow
-1. After meeting ends, Zoom processes recording
-2. GET /api/events fetches recording status for past events
-3. If recording exists but not publicly shared, API enables public sharing
-4. Share URL and password returned to frontend
-5. User can click "Recording" button to access
-
-### Error Handling
-- All Zoom API calls go through centralized `zoomApiCall` wrapper
-- 401 errors trigger token cache invalidation and automatic retry
-- User-friendly error messages displayed for:
-  - Rate limits (429)
-  - Authentication failures (401)
-  - Permission/Pro account requirements (403/400)
-  - Service errors (5xx)

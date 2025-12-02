@@ -8,9 +8,6 @@ export const eventSchema = z.object({
   timezone: z.string(),
   participants: z.array(z.string().email()).max(6),
   meetLink: z.string().url().optional().nullable(),
-  recordingLink: z.string().url().optional().nullable(),
-  recordingPassword: z.string().optional().nullable(),
-  recordingError: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
 });
 
@@ -20,7 +17,6 @@ export const insertEventSchema = z.object({
   endTime: z.string().min(1, "End time is required"),
   timezone: z.string().min(1, "Timezone is required"),
   participants: z.array(z.string().email("Invalid email address")).max(6, "Maximum 6 participants allowed"),
-  recordingLink: z.string().url("Invalid recording link").optional().nullable(),
   description: z.string().optional().nullable(),
 }).refine((data) => {
   const start = new Date(data.startTime);
