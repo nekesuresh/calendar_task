@@ -2,7 +2,13 @@
 
 ## Overview
 
-This is a modern tutoring calendar application that integrates with Google Calendar to provide full CRUD operations for tutoring sessions. The application features a dual-view interface (list view and monthly calendar view) with automatic Google Meet link generation for virtual sessions. Built with React, TypeScript, and Express, it provides a user-friendly interface for scheduling, managing, and tracking educational sessions.
+This is a modern tutoring calendar application that integrates with Google Calendar and Google Drive to provide full CRUD operations for tutoring sessions. The application features a dual-view interface (list view and monthly calendar view) with automatic Google Meet link generation for virtual sessions. Additionally, it supports viewing Google Meet recordings for past sessions. Built with React, TypeScript, and Express, it provides a user-friendly interface for scheduling, managing, and tracking educational sessions.
+
+## Recent Changes (December 2, 2025)
+- Added Google Drive integration for fetching Meet recordings
+- Added recording status indicators on past events (locked/processing/available states)
+- Fixed calendar account switching - users can now connect to different Google accounts
+- Fixed page refresh behavior - /calendar page redirects to landing page on refresh
 
 ## User Preferences
 
